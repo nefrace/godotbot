@@ -17,8 +17,6 @@ const markdowned = s => {
     return s.toString().replace(MarkdownEscape, escapeFunc)
 }
 
-const waitPort = require('wait-port')
-
 
 
 const mongo_uri = "mongodb://"+process.env.MONGO_HOST+"/godot"
