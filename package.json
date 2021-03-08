@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "wait-port": "^0.2.9"
+  }
+}
