@@ -3,4 +3,4 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --production
 COPY . .
-CMD ["node", "app/index.js"]
+CMD ["node", "index.js"]
