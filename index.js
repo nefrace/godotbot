@@ -137,7 +137,7 @@ bot.onText(/^\/set ([a-zA-Z]+) (\d+)/, async(msg, match) => {
 
 
 
-bot.onText(/^(\+|-|👍|👎)/, async(msg, match) => {
+bot.onText(/^(\+|-|👍|👎|➕|➖)/, async(msg, match) => {
     processKarma(msg, match, {emoji: true})
 })
 
@@ -418,11 +418,11 @@ async function processKarma(msg, match, settings={}) {
             }
         }  
         if(msg.sticker) {
-            if (["👍","👍🏻","👍🏼","👍🏽","👍🏾","👍🏿","➕"].includes(msg.sticker.emoji)) {
+            if (["👍", "➕"].includes(msg.sticker.emoji)) {
                 changeMessage = `повысил`
                 updateValue = 1
             }
-            else if (["👎","👎🏻","👎🏼","👎🏽","👎🏾","👎🏿","➖"].includes(msg.sticker.emoji)){
+            else if (["👎", "➖"].includes(msg.sticker.emoji)){
                 changeMessage = `уменьшил`
                 updateValue = -1            
             }
