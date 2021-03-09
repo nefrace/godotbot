@@ -31,6 +31,12 @@ bot.getMe().then(result => {
     me = result
     console.log(me)
     console.log("TLG BOT CONNECTED")
+    bot.setMyCommands([
+        {"command": "help", "description": "Показать справку по командам"},
+        {"command": "top", "description": "Показать ТОП-10 пользователей по карме"},
+        {"command": "bottom", "description": "Показать отрицательный ТОП-10 пользователей по карме"},
+        {"command": "stats", "description": "Показать статистику пользователя"}
+    ])
 }).catch(error => console.error(error.code, error.response.body))
 
 
@@ -81,7 +87,7 @@ bot.onText(/^\/help/, async msg => {
 
 /stats \\- покажет вашу статистику кармы и сообщений для данного чата\\. Карма общая на все чаты\\.
 /top \\- покажет ТОП\\-10 мест по карме\\.
-/top\\_n \\- покажет отрицательный ТОП\\-10\\.
+/bottom \\- покажет отрицательный ТОП\\-10\\.
 /me \\- я напишу твоё сообщение как действие\\. Например это:
 \`/me написал очень полезного бота\`
 превратится в это:
@@ -230,7 +236,7 @@ bot.onText(/^\/top/, async msg => {
     bot.sendMessage(msg.chat.id, message, {parse_mode: "MarkdownV2", reply_to_message_id: msg.message_id})
 })
 
-bot.onText(/^\/top_n/, async msg => {
+bot.onText(/^\/bottom/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat) {
         return
