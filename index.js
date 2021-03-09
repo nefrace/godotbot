@@ -449,6 +449,12 @@ async function processKarma(msg, match, settings={}) {
             bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
             return
         }
+        if (timeDiff < chat.options.karmaCooldown){
+            const messages = await Trigger.find({trigger:'tooFast', show: true})
+            const message = messages[getRandomInt(0, messages.length)].text
+            bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
+            return
+        }
         if(to.id === me.id) {
             let messages
             let change = true
@@ -463,12 +469,6 @@ async function processKarma(msg, match, settings={}) {
             if (!change) {
                 return
             }
-        }
-        if (timeDiff < chat.options.karmaCooldown){
-            const messages = await Trigger.find({trigger:'tooFast', show: true})
-            const message = messages[getRandomInt(0, messages.length)].text
-            bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
-            return
         }
         if (to.is_bot && to.id != me.id) {
             return
