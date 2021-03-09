@@ -79,10 +79,11 @@ bot.onText(/^\/help/, async msg => {
 Между изменениями кармы от одного человека должно пройти не менее ${chat.options.karmaCooldown} секунд\\.
 Если у вас отрицательная карма \\- менять другим её нельзя\\!
 
-/my\\_stats \\- покажет вашу статистику кармы и сообщений для данного чата\\. Карма общая на все чаты\\.
-/top \\- покажет ТОП\\-10 пользователей данного чата по числу кармы\\.
+/stats \\- покажет вашу статистику кармы и сообщений для данного чата\\. Карма общая на все чаты\\.
+/top \\- покажет ТОП\\-10 мест по карме\\.
+/top\\_n \\- покажет отрицательный ТОП\\-10\\.
 /me \\- я напишу твоё сообщение как действие\\. Например это:
-/me написал очень полезного бота
+\`/me написал очень полезного бота\`
 превратится в это:
 _*Vlad* написал очень полезного бота_ 
 
@@ -126,7 +127,7 @@ bot.onText(/^\/set ([a-zA-Z]+) (\d+)/, async(msg, match) => {
         if (chat.options[option] && value) {
             let field = 'options.'+option
             let obj = {}
-            obj[field] = Math.min(Math.max(60, value), 600)
+            obj[field] = Math.min(Math.max(10, value), 600)
             Chat.updateOne({uid: msg.chat.id}, {$set: obj}).exec()
             bot.deleteMessage(msg.chat.id, msg.message_id)
             bot.sendMessage(msg.chat.id, `Значение ${option} установлено на ${obj[field]}`)    
@@ -190,31 +191,7 @@ bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]
     })
 })
 
-
-
-bot.onText(/^\/top\+$/, async msg => {
-    return
-    const chat = await Chat.findOne({uid: msg.chat.id})
-    const users = await User.find({uid: chat.users}).limit(10).sort({karma: -1}).select({username: 1, karma: 1, uid: 1})
-    let message = "Вот наш ТОП\\-10 пользователей в данном чате:\n"
-    let i = 1
-    let lastKarma = users[0].karma
-    for(let user of users) {
-        let name = markdowned(user.username)
-        if(user.uid == msg.from.id){
-            name = "*" + name + "*"
-        }
-        if(user.karma < lastKarma)
-        {
-            i+=1
-            lastKarma = user.karma
-        }
-        message += `${i}\\. ${name} \\(${markdowned(user.karma)}\\)\n`
-    }
-    bot.sendMessage(msg.chat.id, message, {parse_mode: "MarkdownV2", reply_to_message_id: msg.message_id})
-})
-
-bot.onText(/^\/top$/, async msg => {
+bot.onText(/^\/top/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat) {
         return
@@ -253,7 +230,7 @@ bot.onText(/^\/top$/, async msg => {
     bot.sendMessage(msg.chat.id, message, {parse_mode: "MarkdownV2", reply_to_message_id: msg.message_id})
 })
 
-bot.onText(/^\/top\-$/, async msg => {
+bot.onText(/^\/top_n/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat) {
         return
@@ -293,23 +270,47 @@ bot.onText(/^\/top\-$/, async msg => {
 })
 
 
-
 bot.onText(/^\/my_stats/, async msg => {
+    bot.sendMessage(msg.chat.id, `Теперь команда для показа статистики - /stats`)
+})
+
+
+bot.onText(/^\/stats/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat) {
         return
     }
-    const me = await getUser(msg.from)
-    const lessKarma = await User.countDocuments({karma: {$gt: me.karma}})
-    const sameKarma = await User.find({karma: me.karma})
-    console.log(sameKarma)
+    let user 
+    if(msg.reply_to_message) {
+        user = await getUser(msg.reply_to_message.from) // Get user from reply
+    } else if (msg.entities.length > 1) {
+        for(entity of msg.entities) {
+            if (entity.type == "mention") {
+                const username = msg.text.slice(entity.offset+1, entity.offset+entity.length) // Get user from @Mention
+                user = await User.findOne({username: username})
+                break
+            } else if (entity.type == "text_mention") {     
+                user = await getUser(entity.user)       // Get user from @Mention without username.
+                break                                   // Strange that this is easier than regular mentions.
+            }
+        }
+    } else {
+        user = await getUser(msg.from) // Just get user that sent this message
+    }
+    console.log(user)
+    if(!user) {
+        bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользвателя')
+        return
+    }
+    const lessKarma = await User.countDocuments({karma: {$gt: user.karma}})
+    const sameKarma = await User.find({karma: user.karma})
     let sameMessage = ""
     if(sameKarma.length > 1) {
         sameMessage = "\nТы делишь его с:\n"
         let i = 0;
         for(let same of sameKarma) {
             if (i < 6) {
-                if(same.uid != me.uid) {
+                if(same.uid != user.uid) {
                     sameMessage += ` \\- *${markdowned(same.username)}*\n`
                     i += 1
                 }
@@ -320,13 +321,13 @@ bot.onText(/^\/my_stats/, async msg => {
         }
     }
     let message = `
-Вот твоя статистика, ${markdowned(me.username)}:
+Вот информация о тебе, *${markdowned(user.username)}*:
 
-Карма: *${markdowned(me.karma)}*
+Карма: *${markdowned(user.karma)}*
 Место среди пользователей: *${lessKarma+1}* ${sameMessage}
-Количество сообщений: *${me.messagesCount}*
-Сколько раз менял карму: *${me.karmaChanged}*
-Сколько раз получал карму: *${me.karmaGot}*
+Количество сообщений: *${user.messagesCount}*
+Сколько раз менял карму: *${user.karmaChanged}*
+Сколько раз получал карму: *${user.karmaGot}*
 `
     bot.sendMessage(msg.chat.id, message, {parse_mode: "MarkdownV2", reply_to_message_id: msg.message_id})
 })
@@ -335,7 +336,7 @@ bot.onText(/^\/my_stats/, async msg => {
 
 bot.on('message', async msg => {
     let chat = await getChat(msg.chat)
-    if (!chat) {
+    if (!chat || msg.chat.id > 0) {
         return
     }
     let user = await getUser(msg.from)
@@ -351,6 +352,11 @@ bot.on('message', async msg => {
         {$inc: {messagesCount: 1}}
     )
 })
+
+
+async function addPhrase(trigger, text) {
+
+}
 
 
 
@@ -390,8 +396,10 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min; //Максимум не включается, минимум включается
   }
 
-
 async function processKarma(msg, match, settings={}) {
+    if(process.env.DEBUG) {
+        return
+    }
     if(msg.reply_to_message) {
         const chat = await getChat(msg.chat)
         if (!chat) {
@@ -411,27 +419,13 @@ async function processKarma(msg, match, settings={}) {
             }
         }  
         if(msg.sticker) {
-            switch(msg.sticker.emoji) {
-                case "👍":
-                case "👍🏻":
-                case "👍🏼":
-                case "👍🏽":
-                case "👍🏾":
-                case "👍🏿":
-                    changeMessage = `повысил`
-                    updateValue = 1            
-                    break
-                case "👎":
-                case "👎🏻":
-                case "👎🏼":
-                case "👎🏽":
-                case "👎🏾":
-                case "👎🏿":
-                    changeMessage = `уменьшил`
-                    updateValue = -1            
-                    break
-                default:
-                    break
+            if (["👍","👍🏻","👍🏼","👍🏽","👍🏾","👍🏿","➕"].includes(msg.sticker.emoji)) {
+                changeMessage = `повысил`
+                updateValue = 1
+            }
+            else if (["👎","👎🏻","👎🏼","👎🏽","👎🏾","👎🏿","➖"].includes(msg.sticker.emoji)){
+                changeMessage = `уменьшил`
+                updateValue = -1            
             }
         }
         if(updateValue == 0) return
