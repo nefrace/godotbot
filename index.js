@@ -297,7 +297,6 @@ bot.onText(/^\/stats/, async msg => {
     } else {
         user = await getUser(msg.from) // Just get user that sent this message
     }
-    console.log(user)
     if(!user) {
         bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользвателя')
         return
