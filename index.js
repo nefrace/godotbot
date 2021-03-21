@@ -272,7 +272,7 @@ bot.onText(/(оффтоп|offtop)/i, async msg => {
     Chat.updateOne({uid: msg.chat.id}, {$set: {lastOfftop: msgDate}}).exec()
 })
 
-bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]{4,32})/, async(msg, match) => {
+bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]{4,32})/i, async(msg, match) => {
     const chat = await getChat(msg.chat)
     console.log(match.length, match, match[match.length-1])
     const topic = match[match.length-1]
