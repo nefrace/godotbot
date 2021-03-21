@@ -1,11 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
 const mongoose = require('mongoose');
 
-const {userSchema, chatSchema, triggerSchema} = require('./schemas');
+const {userSchema, chatSchema, triggerSchema, warningSchema} = require('./schemas');
 
 const User = mongoose.model('User', userSchema)
 const Chat = mongoose.model('Chat', chatSchema)
 const Trigger = mongoose.model('Trigger', triggerSchema)
+const Warning = mongoose.model('Warning', warningSchema)
 let me
 
 
@@ -120,6 +121,98 @@ bot.onText(/\/setmain/, async(msg, match) => {
 })
 
 
+bot.onText(/^\/warn/, async(msg, match) => {
+    const chat = await Chat.findOne({uid: msg.chat.id})
+    if (!chat || msg.chat.id > 0)  return
+
+    const member = await bot.getChatMember(msg.chat.id, msg.from.id)
+    if (member.status != "administrator" && member.status != "creator") return
+
+    if (msg.reply_to_message) {
+        const to = msg.reply_to_message.from
+        if(to.id == me.id) {
+            return
+        }
+        if (user.uid === msg.from.id) {
+            return
+        }
+        const warns = await Warning.find({user: to.id, chat: msg.chat.id, active: true})
+        console.log({warns})
+        if (warns.length >= (chat.options.maxWarnings || 3)) {
+            //bot.kickChatMember(msg.chat.id, to.id)
+            bot.restrictChatMember(msg.chat.id, to.id, {
+                can_add_web_page_previews: false,
+                can_change_info: false,
+                can_invite_users: false,
+                can_pin_messages: false, 
+                can_send_media_messages: false,
+                can_send_messages: false,
+                can_send_other_messages: false,
+                can_send_polls: false
+            })
+            bot.sendMessage(
+                msg.chat.id,
+                `*${markdowned(to.first_name)}* получил слишком много предупреждений и больше не будет ничего писать\\.`,
+                {
+                    parse_mode: "MarkdownV2",
+                    reply_to_message_id: msg.reply_to_message.message_id
+                }
+            )
+        } else {
+            const warning = new Warning({user: to.id, chat: msg.chat.id, msg: msg.reply_to_message.text || "Нет текста"})
+            warning.save()
+            let message = `*${markdowned(to.first_name)}* получил${warns.length === 0 ? ' ': ' ещё '}одно предупреждение\\. *Всего: ${warns.length + 1}*`
+            if (warns.length === (chat.options.maxWarnings || 3) - 1){
+                message += "\nДальше только молчанка\\."
+            }
+
+            bot.sendMessage(
+                msg.chat.id,
+                message,
+                {
+                    parse_mode: 'MarkdownV2',
+                    reply_to_message_id: msg.reply_to_message.message_id
+                }
+            )
+        }
+    }
+})
+
+bot.onText(/^\/unban/, async (msg, match) => {
+    const chat = await Chat.findOne({uid: msg.chat.id})
+    if (!chat) {
+        return
+    }
+    const member = await bot.getChatMember(msg.chat.id, msg.from.id)
+    if (member.status != "administrator" && member.status != "creator") return
+
+    let user = await getUserFromMessage(msg)
+    if(!user) {
+        bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользвателя')
+        return
+    }
+    if (user.uid === msg.from.id) {
+        return
+    }
+    if(user.uid == me.id) {
+        return
+    }
+    Warning.updateMany({user: user.uid, chat: msg.chat.id}, {$set: {active: false}})
+    //bot.unbanChatMember(msg.chat.id, user.uid)
+    bot.restrictChatMember(msg.chat.id, user.uid, {
+        can_add_web_page_previews: true,
+        can_change_info: true,
+        can_invite_users: true,
+        can_pin_messages: true, 
+        can_send_media_messages: true,
+        can_send_messages: true,
+        can_send_other_messages: true,
+        can_send_polls: true
+    })
+    bot.sendMessage(msg.chat.id, `*${markdowned(user.username)}* был разбанен\\.`, {parse_mode:'MarkdownV2'})
+})
+
+
 bot.onText(/^\/set ([a-zA-Z]+) (\d+)/, async(msg, match) => {
     
     const chat = await Chat.findOne({uid: msg.chat.id})
@@ -133,8 +226,8 @@ bot.onText(/^\/set ([a-zA-Z]+) (\d+)/, async(msg, match) => {
         if (chat.options[option] && value) {
             let field = 'options.'+option
             let obj = {}
-            obj[field] = Math.min(Math.max(10, value), 600)
-            Chat.updateOne({uid: msg.chat.id}, {$set: obj}).exec()
+            obj[field] = Math.min(Math.max(1, value), 600)
+            Chat.updateOne({uid: msg.chat.id}, {$set: obj}, {upsert: true}).exec()
             bot.deleteMessage(msg.chat.id, msg.message_id)
             bot.sendMessage(msg.chat.id, `Значение ${option} установлено на ${obj[field]}`)    
         }
@@ -199,7 +292,7 @@ bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]
 
 bot.onText(/^\/top/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
-    if (!chat) {
+    if (!chat || chat.main) {
         return
     }
     const users = await User.find({karma:{$gt:0}}).sort({karma: -1}).select({username: 1, karma: 1, uid: 1})
@@ -238,7 +331,7 @@ bot.onText(/^\/top/, async msg => {
 
 bot.onText(/^\/bottom/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
-    if (!chat) {
+    if (!chat || chat.main) {
         return
     }
     const users = await User.find({karma:{$lt:0}}).sort({karma: 1}).select({username: 1, karma: 1, uid: 1})
@@ -283,26 +376,11 @@ bot.onText(/^\/my_stats/, async msg => {
 
 bot.onText(/^\/stats/, async msg => {
     const chat = await Chat.findOne({uid: msg.chat.id})
-    if (!chat) {
+    if (!chat || chat.main) {
         return
     }
-    let user 
-    if(msg.reply_to_message) {
-        user = await getUser(msg.reply_to_message.from) // Get user from reply
-    } else if (msg.entities.length > 1) {
-        for(entity of msg.entities) {
-            if (entity.type == "mention") {
-                const username = msg.text.slice(entity.offset+1, entity.offset+entity.length) // Get user from @Mention
-                user = await User.findOne({username: username})
-                break
-            } else if (entity.type == "text_mention") {     
-                user = await getUser(entity.user)       // Get user from @Mention without username.
-                break                                   // Strange that this is easier than regular mentions.
-            }
-        }
-    } else {
-        user = await getUser(msg.from) // Just get user that sent this message
-    }
+    let user = await getUserFromMessage(msg)
+    
     if(!user) {
         bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользвателя')
         return
@@ -390,6 +468,27 @@ async function getUser(u) {
             if(err) return console.error(err)
             return user
         })
+    }
+    return user
+}
+
+async function getUserFromMessage(msg) {
+    let user 
+    if(msg.reply_to_message) {
+        user = await getUser(msg.reply_to_message.from) // Get user from reply
+    } else if (msg.entities.length > 1) {
+        for(entity of msg.entities) {
+            if (entity.type == "mention") {
+                const username = msg.text.slice(entity.offset+1, entity.offset+entity.length) // Get user from @Mention
+                user = await User.findOne({username: username})
+                break
+            } else if (entity.type == "text_mention") {     
+                user = await getUser(entity.user)       // Get user from @Mention without username.
+                break                                   // Strange that this is easier than regular mentions.
+            }
+        }
+    } else {
+        user = await getUser(msg.from) // Just get user that sent this message
     }
     return user
 }

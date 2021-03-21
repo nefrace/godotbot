@@ -22,7 +22,8 @@ const chatSchema = new mongoose.Schema({
         {
             offtopCooldown: {type: Number, default: 60},
             karmaCooldown: {type: Number, default: 60},
-        }
+            maxWarnings: {type: Number, default: 3}
+        },
 })
 
 const triggerSchema = new mongoose.Schema({
@@ -31,5 +32,13 @@ const triggerSchema = new mongoose.Schema({
     show: {type: Boolean, default: false}
 })
 
+const warningSchema = new mongoose.Schema({
+    user: Number,
+    chat: Number,
+    msg: String,
+    active: {type: Boolean, default: true},
+    date: {type: Date, default: Date.now}
+})
 
-module.exports = {userSchema, chatSchema, triggerSchema}
+
+module.exports = {userSchema, chatSchema, triggerSchema, warningSchema}
