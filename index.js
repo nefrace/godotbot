@@ -133,7 +133,7 @@ bot.onText(/^\/warn/, async(msg, match) => {
         if(to.id == me.id) {
             return
         }
-        if (user.uid === msg.from.id) {
+        if (to.id === msg.from.id) {
             return
         }
         const warns = await Warning.find({user: to.id, chat: msg.chat.id, active: true})
