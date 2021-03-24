@@ -188,7 +188,7 @@ bot.onText(/^\/unban/, async (msg, match) => {
 
     let user = await getUserFromMessage(msg)
     if(!user) {
-        bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользвателя')
+        bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользователя')
         return
     }
     if (user.uid === msg.from.id) {
@@ -382,7 +382,7 @@ bot.onText(/^\/stats/, async msg => {
     let user = await getUserFromMessage(msg)
     
     if(!user) {
-        bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользвателя')
+        bot.sendMessage(msg.chat.id, 'Извините, не нашла ничего на данного пользователя')
         return
     }
     const lessKarma = await User.countDocuments({karma: {$gt: user.karma}})
