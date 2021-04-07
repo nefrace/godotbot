@@ -283,8 +283,8 @@ bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]
     const message = messages[getRandomInt(0, messages.length)].text
     bot.sendMessage(msg.chat.id, message, {reply_markup: {
         inline_keyboard: [[ {
-            text: `Поиск по ${markdowned(topic)}`,
-            url: `https://docs.godotengine.org/ru/stable/?rtd_search=${markdowned(topic)}`
+            text: `Поиск по ${topic}`,
+            url: `https://docs.godotengine.org/ru/stable/?rtd_search=${topic}`
         }]]},
         reply_to_message_id: msg.message_id
     })
