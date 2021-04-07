@@ -1,8 +1,6 @@
 console.log(Date.now().toLocaleString())
 console.log(`==========================================
-
 STARTING BOT
-
 =============================================`)
 
 const TelegramBot = require('node-telegram-bot-api');
