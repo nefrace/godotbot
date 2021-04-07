@@ -1,4 +1,9 @@
 console.log(Date.now().toLocaleString())
+console.log(`==========================================
+
+STARTING BOT
+
+=============================================`)
 
 const TelegramBot = require('node-telegram-bot-api');
 const mongoose = require('mongoose');
@@ -276,11 +281,11 @@ bot.onText(/(оффтоп|offtop)/i, async msg => {
 
 bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]{4,32})/i, async(msg, match) => {
     const chat = await getChat(msg.chat)
-    console.log(match.length, match, match[match.length-1])
     const topic = match[match.length-1]
     if(!chat) {
         return
     }
+    console.log(topic)
     const messages = await Trigger.find({trigger: "docs", show: true})
     const message = messages[getRandomInt(0, messages.length)].text
     bot.sendMessage(msg.chat.id, message, {reply_markup: {
