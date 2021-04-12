@@ -639,7 +639,10 @@ async function updateDB(id) {
     const users = await User.find({uid: chat.users})
     console.log({users})
     for(let user of users) {
-        const chatMember = await bot.getChatMember(id, user.uid) 
+        const chatMember = await bot.getChatMember(id, user.uid).catch(e => {return null})
+        if(!chatMember) {
+            continue
+        }
         const u = chatMember.user
         user.name = u.first_name + (u.last_name? " " + u.last_name : "")
         user.username = u.username || null
