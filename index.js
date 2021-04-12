@@ -645,7 +645,7 @@ async function updateDB(id) {
             continue
         }
         const u = chatMember.user
-        user.name = null
+        user.name = undefined
         user.full_name = u.first_name + (u.last_name? " " + u.last_name : "")
         user.username = u.username || null
         await user.save()
