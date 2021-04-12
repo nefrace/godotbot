@@ -650,7 +650,7 @@ async function updateDB(id) {
         user.username = u.username || null
         await user.save()
         console.log(`USER ${user.uid} SAVED`)
-        await sleep(200)
+        await sleep(100)
     }
     console.log("WE ARE DONE")
     return true
