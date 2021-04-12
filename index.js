@@ -348,7 +348,8 @@ bot.onText(/^\/top/, async msg => {
             message += `\n*${currentPlace} место* \\(${lastKarma}\\): `
             lastPlace = currentPlace
         }
-        let name = markdowned(user.name)
+        console.log(user)
+        let name = markdowned(user.full_name)
         if(user.uid == msg.from.id){
             name = "*" + name + "*"
         }
@@ -388,7 +389,7 @@ bot.onText(/^\/bottom/, async msg => {
             message += `\n*${currentPlace} место* \\(${markdowned(lastKarma)}\\): `
             lastPlace = currentPlace
         }
-        let name = markdowned(user.name)
+        let name = markdowned(user.full_name)
         if(user.uid == msg.from.id){
             name = "*" + name + "*"
         }
@@ -435,7 +436,7 @@ bot.onText(/^\/stats/, async msg => {
         }
     }
     let message = `
-Вот информация о тебе, *${markdowned(user.name)}*:
+Вот информация о тебе, *${markdowned(user.full_name)}*:
 
 Карма: *${markdowned(user.karma)}*
 Место среди пользователей: *${lessKarma+1}* ${sameMessage}
@@ -496,13 +497,13 @@ async function getUser(u) {
     let full_name = u.first_name + (u.last_name? " " + u.last_name : "")
     let user = await User.findOne({uid: u.id})
     if (!user) {
-        user = new User({uid: u.id, name: full_name, username: u.username })
+        user = new User({uid: u.id, full_name: full_name, username: u.username })
         user.save((err, user) => {
             if(err) return console.error(err)
             return user
         })
     } else {
-        user.name = full_name
+        user.full_name = full_name
         user.username = u.username
         await user.save()
     }
@@ -626,7 +627,7 @@ async function processKarma(msg, match, settings={}) {
                     $inc: {karmaChanged: 1}
                 }
             ).exec()
-            const message = `*${markdowned(fromDB.name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.name)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
+            const message = `*${markdowned(fromDB.full_name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.full_name)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
             console.log(message)
             bot.sendMessage(chat_id, message, {parse_mode: "MarkdownV2"})
         }
@@ -644,7 +645,8 @@ async function updateDB(id) {
             continue
         }
         const u = chatMember.user
-        user.name = u.first_name + (u.last_name? " " + u.last_name : "")
+        user.name = null
+        user.full_name = u.first_name + (u.last_name? " " + u.last_name : "")
         user.username = u.username || null
         await user.save()
         console.log(`USER ${user.uid} SAVED`)
