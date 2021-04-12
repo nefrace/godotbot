@@ -324,7 +324,7 @@ bot.onText(/^\/top/, async msg => {
     if (!chat || chat.main) {
         return
     }
-    const users = await User.find({karma:{$gt:0}}).sort({karma: -1}).select({name: 1, karma: 1, uid: 1})
+    const users = await User.find({karma:{$gt:0}}).sort({karma: -1}).select({full_name: 1, karma: 1, uid: 1})
     let message = ""
     let currentPlace = 1
     let lastPlace = 0
@@ -365,7 +365,7 @@ bot.onText(/^\/bottom/, async msg => {
     if (!chat || chat.main) {
         return
     }
-    const users = await User.find({karma:{$lt:0}}).sort({karma: 1}).select({name: 1, karma: 1, uid: 1})
+    const users = await User.find({karma:{$lt:0}}).sort({karma: 1}).select({full_name: 1, karma: 1, uid: 1})
     let message = ""
     let currentPlace = 1
     let lastPlace = 0
