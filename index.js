@@ -13,7 +13,7 @@ const Chat = mongoose.model('Chat', chatSchema)
 const Trigger = mongoose.model('Trigger', triggerSchema)
 const Warning = mongoose.model('Warning', warningSchema)
 let me
-let updating = false
+let update = false
 
 
 const MarkdownEscape = /_|\*|\[|\]|\(|\)|~|`|>|#|\+|-|=|\||{|}|\.|!/g
@@ -54,7 +54,7 @@ bot.onText(/^\/update_db/, async(msg, match) => {
     if(chatMember.status == "administrator" || chatMember.status == "creator"){
         update = true 
         bot.sendMessage(msg.chat.id, "База данного чата обновляется, подождите, пожалуйста.")
-        const result = await updateDB(msg.chat.id)
+        await updateDB(msg.chat.id)
         bot.sendMessage(msg.chat.id, "База чата успешно обновлена! Благодарю за ожидание :3")
         update = false
     }
@@ -648,6 +648,7 @@ async function updateDB(id) {
         await sleep(200)
     }
     console.log("WE ARE DONE")
+    return true
 }
 
 function sleep(ms) {
