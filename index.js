@@ -13,6 +13,7 @@ const Chat = mongoose.model('Chat', chatSchema)
 const Trigger = mongoose.model('Trigger', triggerSchema)
 const Warning = mongoose.model('Warning', warningSchema)
 let me
+let updating = false
 
 
 const MarkdownEscape = /_|\*|\[|\]|\(|\)|~|`|>|#|\+|-|=|\||{|}|\.|!/g
@@ -46,7 +47,22 @@ bot.getMe().then(result => {
 }).catch(error => console.error(error.code, error.response.body))
 
 
+bot.onText(/^\/update_db/, async(msg, match) => {
+    if (update) return
+    const user = msg.from 
+    const chatMember = await bot.getChatMember(msg.chat.id, user.id)
+    if(chatMember.status == "administrator" || chatMember.status == "creator"){
+        update = true 
+        bot.sendMessage(msg.chat.id, "База данного чата обновляется, подождите, пожалуйста.")
+        const result = await updateDB(msg.chat.id)
+        bot.sendMessage(msg.chat.id, "База чата успешно обновлена! Благодарю за ожидание :3")
+        update = false
+    }
+})
+
+
 bot.onText(/^\/me (.+)/, async (msg, match) => {
+    if (update) return
     const user = msg.from 
     const options = {
         parse_mode: 'MarkdownV2',
@@ -59,6 +75,7 @@ bot.onText(/^\/me (.+)/, async (msg, match) => {
 })
 
 bot.onText(/^\/GodetteSay (.+)/, async (msg, match) => {
+    if (update) return
     const user = msg.from 
     const chatMember = await bot.getChatMember(msg.chat.id, user.id)
     if(chatMember.status == "administrator" || chatMember.status == "creator"){
@@ -76,6 +93,7 @@ bot.onText(/^\/GodetteSay (.+)/, async (msg, match) => {
 
 
 bot.onText(/^\/help/, async msg => {
+    if (update) return
     const chat = await getChat(msg.chat)
     if (!chat) {
         return
@@ -108,6 +126,7 @@ _*Vlad* написал очень полезного бота_
 
 
 bot.onText(/\/setmain/, async(msg, match) => {
+    if (update) return
     const chat = await getChat(msg.chat)
     if(!chat) {
         return
@@ -127,6 +146,7 @@ bot.onText(/\/setmain/, async(msg, match) => {
 
 
 bot.onText(/^\/warn/, async(msg, match) => {
+    if (update) return
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat || msg.chat.id > 0)  return
 
@@ -184,6 +204,7 @@ bot.onText(/^\/warn/, async(msg, match) => {
 })
 
 bot.onText(/^\/unban/, async (msg, match) => {
+    if (update) return
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat) {
         return
@@ -219,7 +240,7 @@ bot.onText(/^\/unban/, async (msg, match) => {
 
 
 bot.onText(/^\/set ([a-zA-Z]+) (\d+)/, async(msg, match) => {
-    
+    if (update) return
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat) {
         return
@@ -256,6 +277,7 @@ bot.on('sticker', msg => {
 
 
 bot.onText(/(оффтоп|offtop)/i, async msg => {
+    if(update) return
     //const offtop = await Chat.findOne({main: true})
     const msgDate = new Date(msg.date * 1000)
     const chat = await getChat(msg.chat)
@@ -278,6 +300,7 @@ bot.onText(/(оффтоп|offtop)/i, async msg => {
 })
 
 bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]{4,32})/i, async(msg, match) => {
+    if (update) return
     const chat = await getChat(msg.chat)
     const topic = match[match.length-1]
     if(!chat) {
@@ -296,11 +319,12 @@ bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]
 })
 
 bot.onText(/^\/top/, async msg => {
+    if (update) return
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat || chat.main) {
         return
     }
-    const users = await User.find({karma:{$gt:0}}).sort({karma: -1}).select({username: 1, karma: 1, uid: 1})
+    const users = await User.find({karma:{$gt:0}}).sort({karma: -1}).select({name: 1, karma: 1, uid: 1})
     let message = ""
     let currentPlace = 1
     let lastPlace = 0
@@ -324,7 +348,7 @@ bot.onText(/^\/top/, async msg => {
             message += `\n*${currentPlace} место* \\(${lastKarma}\\): `
             lastPlace = currentPlace
         }
-        let name = markdowned(user.username)
+        let name = markdowned(user.name)
         if(user.uid == msg.from.id){
             name = "*" + name + "*"
         }
@@ -335,11 +359,12 @@ bot.onText(/^\/top/, async msg => {
 })
 
 bot.onText(/^\/bottom/, async msg => {
+    if (update) return
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat || chat.main) {
         return
     }
-    const users = await User.find({karma:{$lt:0}}).sort({karma: 1}).select({username: 1, karma: 1, uid: 1})
+    const users = await User.find({karma:{$lt:0}}).sort({karma: 1}).select({name: 1, karma: 1, uid: 1})
     let message = ""
     let currentPlace = 1
     let lastPlace = 0
@@ -363,7 +388,7 @@ bot.onText(/^\/bottom/, async msg => {
             message += `\n*${currentPlace} место* \\(${markdowned(lastKarma)}\\): `
             lastPlace = currentPlace
         }
-        let name = markdowned(user.username)
+        let name = markdowned(user.name)
         if(user.uid == msg.from.id){
             name = "*" + name + "*"
         }
@@ -380,6 +405,7 @@ bot.onText(/^\/my_stats/, async msg => {
 
 
 bot.onText(/^\/stats/, async msg => {
+    if (update) return
     const chat = await Chat.findOne({uid: msg.chat.id})
     if (!chat || chat.main) {
         return
@@ -409,7 +435,7 @@ bot.onText(/^\/stats/, async msg => {
         }
     }
     let message = `
-Вот информация о тебе, *${markdowned(user.username)}*:
+Вот информация о тебе, *${markdowned(user.name)}*:
 
 Карма: *${markdowned(user.karma)}*
 Место среди пользователей: *${lessKarma+1}* ${sameMessage}
@@ -423,6 +449,7 @@ bot.onText(/^\/stats/, async msg => {
 
 
 bot.on('message', async msg => {
+    if (update) return
     let chat = await getChat(msg.chat)
     if (!chat || msg.chat.id > 0) {
         return
@@ -466,13 +493,18 @@ async function getChat(c) {
 }
 
 async function getUser(u) {
+    let full_name = u.first_name + (u.last_name? " " + u.last_name : "")
     let user = await User.findOne({uid: u.id})
     if (!user) {
-        user = new User({uid: u.id, username: u.username || u.first_name })
+        user = new User({uid: u.id, name: full_name, username: u.username })
         user.save((err, user) => {
             if(err) return console.error(err)
             return user
         })
+    } else {
+        user.name = full_name
+        user.username = u.username
+        await user.save()
     }
     return user
 }
@@ -506,7 +538,7 @@ function getRandomInt(min, max) {
   }
 
 async function processKarma(msg, match, settings={}) {
-    if(process.env.DEBUG) {
+    if(process.env.DEBUG || update) {
         return
     }
     if(msg.reply_to_message) {
@@ -594,9 +626,30 @@ async function processKarma(msg, match, settings={}) {
                     $inc: {karmaChanged: 1}
                 }
             ).exec()
-            const message = `*${markdowned(fromDB.username)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.username)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
+            const message = `*${markdowned(fromDB.name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.name)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
             console.log(message)
             bot.sendMessage(chat_id, message, {parse_mode: "MarkdownV2"})
         }
     }
+}
+
+async function updateDB(id) {
+    console.log(`UPDATING DB FOR ${id}`)
+    const chat = await Chat.findOne({uid: id})
+    const users = await User.find({uid: chat.users})
+    console.log({users})
+    for(let user of users) {
+        const chatMember = await bot.getChatMember(id, user.uid) 
+        const u = chatMember.user
+        user.name = u.first_name + (u.last_name? " " + u.last_name : "")
+        user.username = u.username || null
+        await user.save()
+        console.log(`USER ${user.uid} SAVED`)
+        await sleep(200)
+    }
+    console.log("WE ARE DONE")
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

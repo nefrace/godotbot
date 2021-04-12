@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
     uid: Number,
+    name: String,
     username: String,
     messagesCount: {type: Number, default: 0},
     karma: {type: Number, default: 0},
