@@ -426,6 +426,7 @@ bot.onText(/^\/stats/, async msg => {
         for(let same of sameKarma) {
             if (i < 6) {
                 if(same.uid != user.uid) {
+                    console.log(`Same user: `, same)
                     sameMessage += ` \\- *${markdowned(same.full_name)}*\n`
                     i += 1
                 }
