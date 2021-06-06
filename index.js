@@ -628,7 +628,11 @@ async function processKarma(msg, match, settings={}) {
                     $inc: {karmaChanged: 1}
                 }
             ).exec()
-            const message = `*${markdowned(fromDB.full_name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.full_name)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
+            let nice = ""
+            if (toDB.karma + updateValue == 69) {
+                nice = "\n*Nice\\.*"
+            }
+            const message = `*${markdowned(fromDB.full_name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.full_name)} \\(${markdowned(toDB.karma + updateValue)}\\)* ${nice}`
             console.log(message)
             bot.sendMessage(chat_id, message, {parse_mode: "MarkdownV2"})
         }
