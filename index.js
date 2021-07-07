@@ -440,6 +440,7 @@ bot.onText(/^\/stats/, async msg => {
 Вот информация о тебе, *${markdowned(user.full_name)}*:
 
 Карма: *${markdowned(user.karma)}*
+Место среди пользователей: *${lessKarma+1}* ${sameMessage}
 Количество сообщений: *${user.messagesCount}*
 Сколько раз менял карму: *${user.karmaChanged}*
 Сколько раз получал карму: *${user.karmaGot}*
