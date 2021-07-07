@@ -420,7 +420,7 @@ bot.onText(/^\/stats/, async msg => {
     const lessKarma = await User.countDocuments({karma: {$gt: user.karma}})
     const sameKarma = await User.find({karma: user.karma})
     let sameMessage = ""
-    if(sameKarma.length > 1) {
+    if(user.karma != 0 && sameKarma.length > 1) {
         sameMessage = "\nТы делишь его с:\n"
         let i = 0;
         for(let same of sameKarma) {
@@ -440,7 +440,6 @@ bot.onText(/^\/stats/, async msg => {
 Вот информация о тебе, *${markdowned(user.full_name)}*:
 
 Карма: *${markdowned(user.karma)}*
-Место среди пользователей: *${lessKarma+1}* ${sameMessage}
 Количество сообщений: *${user.messagesCount}*
 Сколько раз менял карму: *${user.karmaChanged}*
 Сколько раз получал карму: *${user.karmaGot}*
