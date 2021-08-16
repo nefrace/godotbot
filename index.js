@@ -588,7 +588,7 @@ async function processKarma(msg, match, settings={}) {
         // Дальше страшная строка для поиска недавних карма-выстрелов одного юзера другому
         console.log("OLD CARMA SHOTS: ")
         console.log({CarmaShots})
-        const carmaShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown)        
+        const carmaShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown * 1000)        
         console.log("FOUND SHOT: ")
         console.log({carmaShot})
         if (carmaShot) {
