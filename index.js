@@ -592,8 +592,9 @@ async function processKarma(msg, match, settings={}) {
         console.log("FOUND SHOT: ")
         console.log({carmaShot})
         if (carmaShot) {
-            let trigger = 'tooFast' + updateValue > 0 ? "Plus" : "Minus"
+            const trigger = `tooFast${updateValue > 0 ? "Plus" : "Minus"}`
             const messages = await Trigger.find({trigger:trigger, show: true})
+            console.log({messages})
             const message = messages[getRandomInt(0, messages.length)].text
             bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
             return
