@@ -586,7 +586,14 @@ async function processKarma(msg, match, settings={}) {
         const timeDiff = (msgDate - fromDB.lastKarmaShot) / 1000
 
         // Дальше страшная строка для поиска недавних карма-выстрелов одного юзера другому
-        const camraShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown)
+        const carmaShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown)
+        if (carmaShot) {
+            let trigger = 'tooFast' + updateValue > 0 ? "Plus" : "Minus"
+            const messages = await Trigger.find({trigger:trigger, show: true})
+            const message = messages[getRandomInt(0, messages.length)].text
+            bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
+            return
+        }
         if(fromDB.karma < 0) {
             bot.sendMessage(chat_id, `Тебе с такой маленькой кармой (${fromDB.karma}) нельзя менять её другим`, {reply_to_message_id: msg.message_id})
             return
@@ -594,13 +601,6 @@ async function processKarma(msg, match, settings={}) {
         if(from.id == to.id) {
             const trigger = `self${updateValue > 0 ? "Like" : "Dislike"}`
             const messages = await Trigger.find({trigger:'selfLike', show: true})
-            const message = messages[getRandomInt(0, messages.length)].text
-            bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
-            return
-        }
-        if (carmaShot) {
-            let trigger = 'tooFast' + updateValue > 0 ? "Plus" : "Minus"
-            const messages = await Trigger.find({trigger:trigger, show: true})
             const message = messages[getRandomInt(0, messages.length)].text
             bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
             return
