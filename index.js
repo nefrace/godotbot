@@ -24,7 +24,10 @@ const markdowned = s => {
     return s.toString().replace(MarkdownEscape, escapeFunc)
 }
 
-
+let CarmaShots = []
+setInterval(() => {
+    const oldShots = CarmaShots.filter()
+}, 1000 * 60 * 5)
 
 const mongo_uri = "mongodb://"+process.env.MONGO_HOST+"/godot"
 mongoose.connect(mongo_uri, {useNewUrlParser: true, useUnifiedTopology: true})
@@ -34,16 +37,19 @@ db.once('open', () => console.log("DB CONNECTED SUCCESFULLY"))
 
 const telegram_token = process.env.TOKEN
 const bot = new TelegramBot(telegram_token, {polling: true})
+
+const commands = [
+    {"command": "help", "description": "Показать справку по командам"},
+    {"command": "top", "description": "Показать ТОП-10 пользователей по карме"},
+    {"command": "bottom", "description": "Показать отрицательный ТОП-10 пользователей по карме"},
+    {"command": "stats", "description": "Показать статистику пользователя"}
+]
+
 bot.getMe().then(result => {
     me = result
     console.log(me)
     console.log("TLG BOT CONNECTED")
-    bot.setMyCommands([
-        {"command": "help", "description": "Показать справку по командам"},
-        {"command": "top", "description": "Показать ТОП-10 пользователей по карме"},
-        {"command": "bottom", "description": "Показать отрицательный ТОП-10 пользователей по карме"},
-        {"command": "stats", "description": "Показать статистику пользователя"}
-    ])
+    bot.setMyCommands(commands)
 }).catch(error => console.error(error.code, error.response.body))
 
 
@@ -118,6 +124,7 @@ bot.onText(/^\/help/, async msg => {
 _*Vlad* написал очень полезного бота_ 
 
 Также в основном чате я на слово "оффтоп" сразу же кидаю ссылку на оффтоп\\-чат\\. Потому что не стоит засорять основу общими беседами \\(;
+Сбора бота: 16 августа 2021 года
     `, {parse_mode: "MarkdownV2", reply_to_message_id: msg.message_id})
     } catch(error) {
         console.error(error)
@@ -577,22 +584,34 @@ async function processKarma(msg, match, settings={}) {
         const fromDB = await getUser(from)
         const toDB = await getUser(to)
         const timeDiff = (msgDate - fromDB.lastKarmaShot) / 1000
+
+        // Дальше страшная строка для поиска недавних карма-выстрелов одного юзера другому
+        const camraShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown)
         if(fromDB.karma < 0) {
             bot.sendMessage(chat_id, `Тебе с такой маленькой кармой (${fromDB.karma}) нельзя менять её другим`, {reply_to_message_id: msg.message_id})
             return
         }
         if(from.id == to.id) {
+            const trigger = `self${updateValue > 0 ? "Like" : "Dislike"}`
             const messages = await Trigger.find({trigger:'selfLike', show: true})
             const message = messages[getRandomInt(0, messages.length)].text
             bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
             return
         }
-        if (timeDiff < chat.options.karmaCooldown){
-            const messages = await Trigger.find({trigger:'tooFast', show: true})
+        if (carmaShot) {
+            let trigger = 'tooFast' + updateValue > 0 ? "Plus" : "Minus"
+            const messages = await Trigger.find({trigger:trigger, show: true})
             const message = messages[getRandomInt(0, messages.length)].text
             bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
             return
         }
+        /// TODO: Пока просто закомментим, потом если всё ок, надо удалить.
+        // if (timeDiff < chat.options.karmaCooldown){
+        //     const messages = await Trigger.find({trigger:'tooFast', show: true})
+        //     const message = messages[getRandomInt(0, messages.length)].text
+        //     bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
+        //     return
+        // }
         if(to.id === me.id) {
             let messages
             let change = true
@@ -633,6 +652,7 @@ async function processKarma(msg, match, settings={}) {
             }
             const message = `*${markdowned(fromDB.full_name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.full_name)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
             console.log(message)
+            CarmaShots.push({from: from.id, to: to.id, date: Date.now()})
             bot.sendMessage(chat_id, message, {parse_mode: "MarkdownV2"})
         }
     }
