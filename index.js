@@ -586,7 +586,11 @@ async function processKarma(msg, match, settings={}) {
         const timeDiff = (msgDate - fromDB.lastKarmaShot) / 1000
 
         // Дальше страшная строка для поиска недавних карма-выстрелов одного юзера другому
-        const carmaShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown)
+        console.log("OLD CARMA SHOTS: ")
+        console.log({CarmaShots})
+        const carmaShot = CarmaShots.find((val, id) => val.from === from.id && val.to === to.id && (Date.now() - val.date) < chat.options.karmaCooldown)        
+        console.log("FOUND SHOT: ")
+        console.log({carmaShot})
         if (carmaShot) {
             let trigger = 'tooFast' + updateValue > 0 ? "Plus" : "Minus"
             const messages = await Trigger.find({trigger:trigger, show: true})
@@ -653,6 +657,8 @@ async function processKarma(msg, match, settings={}) {
             const message = `*${markdowned(fromDB.full_name)} \\(${markdowned(fromDB.karma)}\\)* ${changeMessage} карму *${markdowned(toDB.full_name)} \\(${markdowned(toDB.karma + updateValue)}\\)*`
             console.log(message)
             CarmaShots.push({from: from.id, to: to.id, date: Date.now()})
+            console.log("NEW CarmaShots: ")
+            console.log({CarmaShots})
             bot.sendMessage(chat_id, message, {parse_mode: "MarkdownV2"})
         }
     }
