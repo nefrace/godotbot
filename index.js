@@ -600,7 +600,7 @@ async function processKarma(msg, match, settings={}) {
         }
         if(from.id == to.id) {
             const trigger = `self${updateValue > 0 ? "Like" : "Dislike"}`
-            const messages = await Trigger.find({trigger:'selfLike', show: true})
+            const messages = await Trigger.find({trigger:trigger, show: true})
             const message = messages[getRandomInt(0, messages.length)].text
             bot.sendMessage(chat_id, message, {reply_to_message_id: msg.message_id})
             return
