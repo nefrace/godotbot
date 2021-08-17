@@ -25,9 +25,10 @@ const markdowned = s => {
 }
 
 let CarmaShots = []
+const clearInterval = 1000 * 60 * 5
 setInterval(() => {
-    const oldShots = CarmaShots.filter()
-}, 1000 * 60 * 5)
+    CarmaShots = CarmaShots.filter(obj => (Date.now() - obj.date) < clearInterval)
+}, clearInterval)
 
 const mongo_uri = "mongodb://"+process.env.MONGO_HOST+"/godot"
 mongoose.connect(mongo_uri, {useNewUrlParser: true, useUnifiedTopology: true})
