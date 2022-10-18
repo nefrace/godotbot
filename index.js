@@ -320,7 +320,7 @@ bot.onText(/док(ументац[а-я]+|[а-я])? ((п)?о )?(?<topic>@?[\w\d]
     bot.sendMessage(msg.chat.id, message, {reply_markup: {
         inline_keyboard: [[ {
             text: `Поиск по ${topic}`,
-            url: `https://docs.godotengine.org/ru/stable/?rtd_search=${topic}`
+            url: `https://docs.godotengine.org/ru/stable/search.html?q=${topic}`
         }]]},
         reply_to_message_id: msg.message_id
     })
