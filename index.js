@@ -384,7 +384,7 @@ bot.onText(
     console.log(topic);
     const messages = await Trigger.find({ trigger: "docs", show: true });
     const message = messages[getRandomInt(0, messages.length)].text;
-    
+
     bot.sendMessage(msg.chat.id, message, {
       reply_markup: {
         inline_keyboard: [
@@ -506,12 +506,13 @@ bot.onText(/^\/stats/, async (msg) => {
   if (!chat || chat.main) {
     return;
   }
-  let user = await getUserFromMessage(msg);
+  let user = await getUserFromMessage(msg, false);
 
   if (!user) {
     bot.sendMessage(
       msg.chat.id,
-      "Извините, не нашла ничего на данного пользователя"
+      "Извините, не нашла ничего на данного пользователя",
+      { reply_to_message_id: msg.message_id }
     );
     return;
   }
@@ -602,8 +603,12 @@ async function getUser(u) {
   return user;
 }
 
-async function getUserFromMessage(msg) {
+async function getUserFromMessage(msg, check_reply = true) {
   let user;
+  if (!check_reply) {
+    user = await getUser(msg.from);
+    return user;
+  }
   if (msg.reply_to_message) {
     user = await getUser(msg.reply_to_message.from); // Get user from reply
   } else if (msg.entities.length > 1) {
