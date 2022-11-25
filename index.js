@@ -646,7 +646,8 @@ async function processKarma(msg, match, settings = {}) {
     if (!chat) {
       return;
     }
-    if(msg.forum_topic_created) {
+    console.log(msg.forum_topic_created);
+    if (msg.forum_topic_created != undefined) {
       return;
     }
     const msgDate = new Date(msg.date * 1000);
