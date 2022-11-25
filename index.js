@@ -646,6 +646,7 @@ async function processKarma(msg, match, settings = {}) {
     if (!chat) {
       return;
     }
+    console.log(msg.reply_to_message)
     const msgDate = new Date(msg.date * 1000);
     const chat_id = msg.chat.id;
     let changeMessage = `повысил`;
